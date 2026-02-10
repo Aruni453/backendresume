@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config();   // MUST be on top
+dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
@@ -10,39 +10,25 @@ import { connectDB } from './config/db.js';
 import userRouter from './routes/userRouter.js';
 import resumeRouter from './routes/resumeRoutes.js';
 import aiRouter from './routes/aiRoutes.js';
-
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Check for required environment variables
-if (!process.env.MONGO_URL) {
-  console.error('Error: MONGO_URI is not defined in environment variables');
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('MONGO_URI is required in production');
-  }
-  process.exit(1);
-}
-if (!process.env.GEMINI_API_KEY) {
-  console.warn('Warning: GEMINI_API_KEY is missing (AI will fail)');
-}
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// CORS configuration for frontend (adjust origin if needed)
+// 1. Initialize DB Connection immediately
+// Mongoose buffers commands, so routes will wait for the connection automatically
+connectDB().catch(err => console.error("DB Connection Error:", err));
+
+// 2. CORS - Ensure your Vercel frontend URL is here
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.NODE_ENV === 'production'
+    ? [process.env.FRONTEND_URL, 'https://vercel.com/aruni453s-projects/vercel-frontend-7o1l/CPCeY4uD4HSrJTqRiS8qzFtAQKbi']
+    : ['http://localhost:5173'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}))
+}));
 
-// Session middleware
+// 3. Session Configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-session-secret-key-change-this-in-production',
+  secret: process.env.SESSION_SECRET || 'dev-secret',
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
@@ -50,65 +36,32 @@ app.use(session({
     collectionName: 'sessions'
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
-    secure: false // Set to true in production with HTTPS
+    secure: process.env.NODE_ENV === 'production' // true for HTTPS
   }
 }));
 
-// Middleware
-app.use(express.json()); // parse JSON bodies
+app.use(express.json());
 
-// Logging middleware (optional, helps debug)
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} - Body:`, req.body);
-  next();
-});
-
-// Routes
+// 4. Routes
+app.get('/', (req, res) => res.send("API is active"));
 app.use('/api/auth', userRouter);
 app.use('/api/resume', resumeRouter);
 app.use('/api/ai', aiRouter);
 
-// Serve uploads folder
-app.use(
-  '/uploads',
-  express.static(path.join(process.cwd(), 'uploads'), {
-    setHeaders: (res) => {
-      res.set('Access-Control-Allow-Origin', 'http://localhost:5173');
-    }
-  })
-);
-
-// Root route
-app.get('/', (req, res) => {
-  res.send("API working on Chrome");
-});
-
-// Connect to MongoDB and start server
-connectDB()
-  .then(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log("Gemini loaded:", !!process.env.GEMINI_API_KEY);
-      });
-    }
-  })
-  .catch((err) => {
-    console.error("Failed to connect to DB", err);
-  });
-
-// Export for Vercel
-export default app;
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
-
-// Global error handler
+// 5. Error Handling
+app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ message: 'Server error', error: err.message });
+  console.error(err.stack);
+  res.status(500).json({ message: 'Internal Server Error' });
 });
+
+// 6. Local Server Only
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Running locally on ${PORT}`));
+}
+
+// 7. THE FIX: Export for Vercel
+export default app;
