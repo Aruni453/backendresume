@@ -58,10 +58,11 @@ app.use((err, req, res, next) => {
 });
 
 // 6. Local Server Only
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`Running locally on ${PORT}`));
-}
+const PORT = process.env.PORT || 4000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 // 7. THE FIX: Export for Vercel
 export default app;
