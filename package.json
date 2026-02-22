@@ -7,8 +7,8 @@
   "author": "",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js",
-    "build": "echo 'No build step required'"
+    "start": "node server",
+     "vercel-start": "node server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
