@@ -58,12 +58,11 @@ app.use((err, req, res, next) => {
 });
 
 
-// const PORT = process.env.PORT || 4000;
+ const PORT = process.env.PORT || 4000;
 
-// app.listen(PORT, "0.0.0.0", () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
+ app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-// 7. THE FIX: Export for Vercel
-// export default app;
-module.exports=app
+
+ export default app;
