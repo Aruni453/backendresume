@@ -21,7 +21,7 @@ connectDB().catch(err => console.error("DB Connection Error:", err));
 // 2. CORS - Ensure your Vercel frontend URL is here
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL, 'https://vercel.com/aruni453s-projects/vercel-frontend-7o1l/CPCeY4uD4HSrJTqRiS8qzFtAQKbi']
+    ? [process.env.FRONTEND_URL]
     : ['http://localhost:5173'],
   credentials: true,
 }));
